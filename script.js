@@ -5,7 +5,7 @@ document.addEventListener("dragstart", (e) => {
     if (e.target instanceof HTMLImageElement) e.preventDefault();
 });
 
-document.getElementById("page-title").addEventListener("click", () => {
+document.getElementById("page-title")?.addEventListener("click", () => {
     location.reload();
 });
 
@@ -46,23 +46,40 @@ copyButton.addEventListener("click", async () => {
 const playerCount = document.getElementById("player-count");
 const playerCountText = playerCount.querySelector(".player-count-text");
 
+function setPlayerCount(state, text) {
+    playerCount.className = `player-count ${state}`.trim();
+    playerCountText.textContent = text;
+    try {
+        sessionStorage.setItem("playerCount", JSON.stringify({ state, text }));
+    } catch {}
+}
+
+try {
+    const cached = JSON.parse(sessionStorage.getItem("playerCount"));
+    if (cached) {
+        playerCount.className = `player-count ${cached.state}`.trim();
+        playerCountText.textContent = cached.text;
+    }
+} catch {}
+
 async function updatePlayerCount() {
     try {
         const res = await fetch(`https://api.mcsrvstat.us/3/${serverIp}`);
         const data = await res.json();
         if (data.online) {
             const { online = 0, max = 0 } = data.players || {};
-            playerCount.className = "player-count online";
-            playerCountText.textContent = `${online} / ${max} online`;
+            setPlayerCount("online", `${online} / ${max} online`);
         } else {
-            playerCount.className = "player-count offline";
-            playerCountText.textContent = "Offline";
+            setPlayerCount("offline", "Offline");
         }
     } catch {
-        playerCount.className = "player-count";
-        playerCountText.textContent = "Status unavailable";
+        setPlayerCount("", "Status unavailable");
     }
 }
 
 updatePlayerCount();
 setInterval(updatePlayerCount, 60000);
+
+document.querySelectorAll('.nav-link[aria-current="page"]').forEach((link) => {
+    link.addEventListener("click", (e) => e.preventDefault());
+});
